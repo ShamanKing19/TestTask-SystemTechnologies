@@ -6,18 +6,17 @@
         xmlns:local="clr-namespace:TestTask"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid Background="#FF5BCFB5">
-        <Border Background="#FFCFF2FF" Width="400" Height="300" CornerRadius="20">
+    <Grid x:Name="grid"  Background="#FF5BCFB5">
+        <Border x:Name="formBorder"  Background="#FFCFF2FF" Width="400" Height="300" CornerRadius="20">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="30" ShadowDepth="0"></DropShadowEffect>
             </Border.Effect>
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Авторизация" TextWrapping="NoWrap"  Width="414" Height="68" TextAlignment="Center" FontSize="36" FontWeight="Normal" FontStyle="Normal"/>
+            <StackPanel x:Name="formAuth" VerticalAlignment="Center" >
+                <TextBlock x:Name="textBlock_Text" Text="Авторизация" TextWrapping="NoWrap"  Width="414" Height="68" TextAlignment="Center" FontSize="36" FontWeight="Normal" FontStyle="Normal"/>
                 <TextBox x:Name="textBox_Login" ToolTip="Логин" Text="" TextWrapping="NoWrap"  Width="286" Height="41" Cursor="IBeam"/>
                 <PasswordBox x:Name="passwordBox_Password" ToolTip="Пароль" Margin="0 20 0 0" Width="286" Cursor="IBeam"/>
-                <Button Content="Войти" Margin="0 40 0 0" Height="44" Width="286" Background="#FF5BCFB5" IsDefault="True" Click="ButtonClick_Auth" Cursor="Hand"/>
+                <Button x:Name="buttonAuth" Content="Войти" Margin="0 40 0 0" Height="44" Width="286" Background="#FF5BCFB5" IsDefault="True" Click="ButtonClick_Auth" Cursor="Hand"/>
             </StackPanel>
         </Border>
-
     </Grid>
 </Window>

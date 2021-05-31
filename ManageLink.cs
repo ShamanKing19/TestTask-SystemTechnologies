@@ -8,11 +8,11 @@ namespace BossesClass
 {
     class ManageLink
     {
-        public int Chief_id;
-        public int Subordinate_id;
+        public string Chief_id { get; set; }
+        public string Subordinate_id { get; set; }
 
         public ManageLink() { }
-        public ManageLink(int Chief_id, int Subordinate_id) 
+        public ManageLink(string Chief_id, string Subordinate_id) 
         {
             this.Chief_id = Chief_id;
             this.Subordinate_id = Subordinate_id;
