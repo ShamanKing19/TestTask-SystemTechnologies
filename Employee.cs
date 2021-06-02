@@ -56,6 +56,17 @@ namespace StaffClass
             set { } 
         }
 
+        public double fullSalary
+        {
+            get
+            {
+                return Convert.ToDouble(this.Base_salary) + Convert.ToDouble(this.Premium);
+            }
+
+            set 
+            { 
+            }
+        }
 
         public Employee() { }
         public Employee(string Employee_id, string Name, string Hire_date, string Position, string Base_salary, string Login) 
@@ -69,7 +80,7 @@ namespace StaffClass
         }
 
         // Запрос к бд
-        private SQLiteDataReader dataTableQuerry(string dataBaseFileName, string querry)
+        public static SQLiteDataReader DataTableQuerry(string dataBaseFileName, string querry)
         {
             SQLiteConnection dbConnection;
             SQLiteCommand sqlCommand = new SQLiteCommand();
@@ -87,8 +98,6 @@ namespace StaffClass
             // Заполнение списка id подчинённых
             List<object> subordinateIdList = FindSubordinates(Convert.ToInt32(id));
 
-
-
             // Переменная для накопления суммы зарплат
             double summSalary = 0;
             
@@ -96,7 +105,7 @@ namespace StaffClass
             foreach (object subordinateId in subordinateIdList)
             {
                 // Находим зарплату, дату найма и должность подчинённого
-                SQLiteDataReader reader = dataTableQuerry("base.db", $"SELECT Base_salary, Hire_date, Position FROM Staff WHERE Employee_id = {subordinateId};");
+                SQLiteDataReader reader = DataTableQuerry("base.db", $"SELECT Base_salary, Hire_date, Position FROM Staff WHERE Employee_id = {subordinateId};");
                 // Перебираем все записи и рассчитываем суммарную зарплату подчинённых
                 while (reader.Read())
                 {
@@ -133,7 +142,7 @@ namespace StaffClass
             return years;
         }
         
-        // Подсчёт премии сотрудника
+        // Расчёт премии сотрудника за стаж
         private double CountExperiencePremium(int experience, string position, double base_salary)
         {
             double premium;
@@ -187,7 +196,8 @@ namespace StaffClass
 
             return premium;
         }
-
+        
+        // Расчёт премии сотрудника за количество подчинённых
         private double CountSubordinatesPremium(double base_salary, string position, List<object> idList)
         {
             double coeff;
@@ -207,11 +217,12 @@ namespace StaffClass
             return premium;
         }
 
+        // Поиск подчинённых сотрудника
         private List<object> FindSubordinates(int id)
         {
             List<object> idList = new List<object>();
             // Поиск id подчинённых
-            SQLiteDataReader reader = dataTableQuerry("base.db", $"SELECT Subordinate_id FROM Bosses WHERE Chief_id = {id};");
+            SQLiteDataReader reader = DataTableQuerry("base.db", $"SELECT Subordinate_id FROM Bosses WHERE Chief_id = {id};");
 
             // Список с id подчинённых
             while (reader.Read())
@@ -220,6 +231,5 @@ namespace StaffClass
             }
             return idList;
         }
-
     }
 }

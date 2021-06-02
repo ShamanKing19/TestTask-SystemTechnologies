@@ -30,10 +30,37 @@ namespace TestTask
         private string dbFileName;
         private SQLiteConnection dbConnection;
         private SQLiteCommand sqlCommand;
+        private Button backButton = new Button 
+        {
+            Content = "Назад",
+            Width = 286,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 5, 0, 5)
+        };
+        private Button backToAuthButton = new Button
+        {
+            Content = "Назад",
+            Width = 286,
+            Margin = new Thickness(0, 5, 0, 10),
+            VerticalAlignment = VerticalAlignment.Bottom,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        private TextBlock sumSalaryTextBlock = new TextBlock
+        {
+            Height = 20,
+            VerticalAlignment = VerticalAlignment.Top,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 10, 0, 0)
+        };
+
         public MainWindow()
         {
             InitializeComponent();
             InitializeDataBase();
+            backButton.Click += AdminWindow;
+            backToAuthButton.Click += BackToAuthWindow;
+            decimal counter = 0;
         }
 
         public void InitializeDataBase()
@@ -85,7 +112,7 @@ namespace TestTask
         }
 
         // Авторизация пользователя
-        private void ButtonClick_Auth(object sender, RoutedEventArgs e)
+        private void buttonAuth_Click(object sender, RoutedEventArgs e)
         {
             // Переменная с базой данных
             DataTable dTable = new DataTable();
@@ -119,11 +146,11 @@ namespace TestTask
                     // Расположение элементов в зависимости от типа пользователя
                     if (login == "admin") 
                     {
-                        AdminWindow();
+                        AdminWindow(sender, e);
                     }
                     else
                     {
-                        UserWindow();
+                        UserWindow(sender, e);
                     }
                     
 
@@ -135,8 +162,13 @@ namespace TestTask
             }
         }
 
-        private void AdminWindow()
+        private void AdminWindow(object sender, RoutedEventArgs e)
         {
+            grid.Children.Remove(sumSalaryTextBlock); // Удаление блока с суммарной зарплатой
+            grid.Children.Remove(backButton); // Убираем кнопку "Назад"
+            formAuth.Children.Clear(); // Очистка контейнера
+
+            // Параметры кнопок
             const int margin = 5;
             const int width = 286;
             Thickness thickness = new Thickness(0, margin, 0, margin);
@@ -158,7 +190,6 @@ namespace TestTask
             };
             showStaffBase_Button.Click += ShowBaseStaff;
 
-
             Button showBossesBase_Button = new Button
             {
                 Content = "Показать базу с начальниками",
@@ -173,34 +204,68 @@ namespace TestTask
                 Width = width,
                 Margin = thickness
             };
-
-
-            Button showSumSalary_Button = new Button
-            {
-                Content = "Показать суммарную зарплату",
-                Width = width,
-                Margin = thickness
-            };
-
-            Button back_Button= new Button();
-            back_Button.Content = "Назад";
-            back_Button.Width = 286;
-            back_Button.Margin = thickness;
-
+            addEmployee_Button.Click += AddEmployee;
 
             formAuth.Children.Add(showAccBase_Button);
             formAuth.Children.Add(showStaffBase_Button);
             formAuth.Children.Add(showBossesBase_Button);
             formAuth.Children.Add(addEmployee_Button);
-            formAuth.Children.Add(showSumSalary_Button);
-            formAuth.Children.Add(back_Button);
+            formAuth.Children.Add(backToAuthButton);
         }
 
-        // Все три метода можно объединить в один, но у меня не получилось настроить передачу аргументов, например, с названием таблицы, при нажатии на кноку показа базы
-        // TODO
-        // 1. Дополнить формулу расчёта премии, учитывая кол-во подчинённых сотрудников  (ХЗ КАК)
+        // Окно пользователя с информацией о зарплате
+        private void UserWindow(object sender, RoutedEventArgs e)
+        {
+            //// Расположение кнопок для пользователя
+            // Настройка границ контейнера с таблицей
+            formBorder.Width = 200;
+            formAuth.Width = 200;
+
+            // Поле с зарплатой сотрудника
+            TextBlock salaryTextBlock = new TextBlock
+            {
+                Height = 20,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            grid.Children.Add(salaryTextBlock);
+            grid.Children.Add(backToAuthButton);
+
+            // Подключение к БД
+            SQLiteConnection dbConnection = new SQLiteConnection($"Data Source = base.db;Version=3;");
+            SQLiteCommand sqlCommand = new SQLiteCommand();
+            dbConnection.Open();
+            sqlCommand.Connection = dbConnection;
+            sqlCommand.CommandText = $"SELECT Base_salary, Position, Hire_date FROM Staff WHERE Login = \"{textBox_Login.Text}\";";
+            SQLiteDataReader reader = sqlCommand.ExecuteReader();
+
+            // Создание экземпляра класса для авторизовавшегося пользователя
+            Employee user = new Employee();
+
+            // Без цикла не работает
+            while (reader.Read())
+            {
+                user.Base_salary = reader["Base_salary"].ToString();
+                user.Position = reader["Position"].ToString();
+                user.Hire_date = reader["Hire_date"].ToString();
+            }
+
+            // Вывод зарплаты в TextBox
+            salaryTextBlock.Text = $"Ваша зарплата: {Convert.ToDouble(user.Base_salary) + Convert.ToDouble(user.Premium)}";
+        }
+
+
+        /* Все три метода с выводом таблиц можно объединить в один,
+         но у меня не получилось настроить передачу аргументов,           
+        например, с названием таблицы, при нажатии на кноку показа базы  */
+        
+        // Отображает таблицу "Accounts" с аккаунтами работников 
         private void ShowBaseAccounts(object sender, RoutedEventArgs e)
         {
+            // Настройка границ контейнера с таблицей
+            formBorder.Width = 400;
+            formAuth.Width = 400;
+
             // Очищаем меню
             formAuth.Children.Clear();
             // Таблица с данными
@@ -214,16 +279,8 @@ namespace TestTask
             // Размещаем таблицу
             formAuth.Children.Add(dataGrid);
 
-            // Делаем кнопку "НАЗАД"
-            Button buttonBack = new Button
-            {
-                Content = "Назад",
-                Width = 100,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Bottom
-            };
-            //buttonBack.Click += AdminWindow;
-            grid.Children.Add(buttonBack);
+            // Размещаем кнопку "НАЗАД"
+            grid.Children.Add(backButton);
 
             // Заполняем таблицу
             DataTable dTable = new DataTable();
@@ -262,39 +319,37 @@ namespace TestTask
                 MessageBox.Show("Database is empty");
         }
 
+        // Отображает таблицу "Staff" с сотрудниками, а также столбец с премией и зарплатой
         private void ShowBaseStaff(object sender, RoutedEventArgs e)
         {
-            // Делаем кнопку "НАЗАД"
-            Button buttonBack = new Button
-            {
-                Content = "Назад",
-                Width = 100,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Bottom
-            };
-            //buttonBack.Click += AdminWindow;
-            grid.Children.Add(buttonBack);
-            
-            formBorder.Width = 600;
-            formAuth.Width = 600;
+            // Настройка границ контейнера с таблицей
+            formBorder.Width = 750;
+            formAuth.Width = 750;
+
+            // Размещаем кнопку "НАЗАД"
+            grid.Children.Add(backButton);
+
+            // Поле с общей зарплатой
+            grid.Children.Add(sumSalaryTextBlock);
+
             // Очищаем меню
             formAuth.Children.Clear();
+            
             // Таблица с данными
             DataGrid dataGrid = new DataGrid
             {
-                Width = 590,
+                Width = 740,
                 Height = 290,
             };
+            
             // Размещаем таблицу
             formAuth.Children.Add(dataGrid);
-
 
             // Заполняем таблицу
             DataTable dTable = new DataTable();
             string sqlQuery = "SELECT * FROM Staff";
             SQLiteDataAdapter adapter = new SQLiteDataAdapter(sqlQuery, dbConnection);
             adapter.Fill(dTable);
-
 
             // Узнаём количество записей
             int rows = dTable.Rows.Count;
@@ -311,8 +366,6 @@ namespace TestTask
                     string base_salary = dTable.Rows[i].ItemArray[4].ToString();
                     string login = dTable.Rows[i].ItemArray[5].ToString();
 
-                    //Employee test = new Employee(name, hire_date, position, base_salary, login);
-                    //MessageBox.Show(test.CountPremium().ToString());
 
                     staffList.Add(new Employee
                     {
@@ -325,6 +378,16 @@ namespace TestTask
                     });
 
                 }
+
+                double summSalary = 0;
+                foreach (Employee employee in staffList)
+                {
+                    summSalary += employee.fullSalary;
+
+                }
+
+                // Вывод суммарной зарплаты
+                sumSalaryTextBlock.Text = $"Суммарная зарплата к выдаче: {summSalary}";
                 // Заполняем datagrid записями
                 dataGrid.ItemsSource = staffList;
             }
@@ -333,18 +396,15 @@ namespace TestTask
                 MessageBox.Show("Database is empty");
         }
 
+        // Отображает таблицу "Bosses" с начальниками и подчинёнными
         private void ShowBaseBosses(object sender, RoutedEventArgs e)
         {
+            // Настройка границ контейнера с таблицей
+            formBorder.Width = 400;
+            formAuth.Width = 400;
+
             // Делаем кнопку "НАЗАД"
-            Button buttonBack = new Button
-            {
-                Content = "Назад",
-                Width = 100,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Bottom
-            };
-            //buttonBack.Click += AdminWindow;
-            grid.Children.Add(buttonBack);
+            grid.Children.Add(backButton);
 
             // Очищаем меню
             formAuth.Children.Clear();
@@ -390,17 +450,20 @@ namespace TestTask
                 MessageBox.Show("Database is empty");
         }
 
-
-
-        private void UserWindow()
+        // Добавление сотрудника и его аккаунта с паролем
+        private void AddEmployee(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show($"Hello, {textBox_Login.Text}");
-            // Расположение кнопок для пользователя
-
-
-
 
         }
+
+        // Возврат к окну авторизации
+        private void BackToAuthWindow(object sender, RoutedEventArgs e)
+        {
+            System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
+            Application.Current.Shutdown();
+        }
+
+
     }
 }
 
