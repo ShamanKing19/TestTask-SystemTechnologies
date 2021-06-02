@@ -18,24 +18,44 @@ namespace StaffClass
         public string Position { get; set; }
         public string Base_salary { get; set; }
         public string Login { get; set; }
-        public string Premium
+        private int WorkExperience
         {
             get
             {
-                return CountPremium(Position).ToString();
-            }
-            set
-            {
+                return getWorkExperience(this.Hire_date);
             }
         }
-        public double SubordinatesSummSalary
+        private double SubordinatesSummSalary
         {
             get
             {
-                return getSummSalaryOfSubordinates();
+                return getSummSalaryOfSubordinates(Convert.ToInt32(this.Employee_id));
             }
             set { }
         }
+        public double Premium
+        {
+            get {
+                double expPremium = CountExperiencePremium(this.WorkExperience, this.Position, Convert.ToDouble(this.Base_salary));
+                double subPremium;
+                switch (this.Position)
+                {
+                    case "Manager":
+                        subPremium = SubordinatesSummSalary * 0.005;
+                        break;
+                    case "Salesman":
+                        subPremium = SubordinatesSummSalary * 0.003;
+                        break;
+                    default:
+                        subPremium = 0;
+                        break;
+                }
+
+                return expPremium + subPremium;
+                }
+            set { } 
+        }
+
 
         public Employee() { }
         public Employee(string Employee_id, string Name, string Hire_date, string Position, string Base_salary, string Login) 
@@ -61,35 +81,41 @@ namespace StaffClass
             return reader;
         }
 
-
-        // Возвращает сумму зарплаты подчинённых
-        private double getSummSalaryOfSubordinates()
+        // Возвращает сумму зарплаты подчинённых без учёта премии
+        private double getSummSalaryOfSubordinates(int id)
         {
-            // Поиск id подчинённых
-            SQLiteDataReader reader = dataTableQuerry("base.db", $"SELECT Subordinate_id FROM Bosses WHERE Chief_id = {Employee_id};");
+            // Заполнение списка id подчинённых
+            List<object> subordinateIdList = FindSubordinates(Convert.ToInt32(id));
+
+
+
+            // Переменная для накопления суммы зарплат
             double summSalary = 0;
-
-            // Список с id подчинённых
-            List<object> subordinateIdList = new List<object>();
-            while (reader.Read())
-            {
-                subordinateIdList.Add(reader["Subordinate_id"]);
-            }
-
+            
             // Рассчёт суммарной зарплаты подчинённых
-            foreach (object id in subordinateIdList)
+            foreach (object subordinateId in subordinateIdList)
             {
-                // Находим зарплату подчинённого
-                reader = dataTableQuerry("base.db", $"SELECT Base_salary FROM Staff WHERE Employee_id = {id};");
-                
-                // Находим суммарную зарплату
+                // Находим зарплату, дату найма и должность подчинённого
+                SQLiteDataReader reader = dataTableQuerry("base.db", $"SELECT Base_salary, Hire_date, Position FROM Staff WHERE Employee_id = {subordinateId};");
+                // Перебираем все записи и рассчитываем суммарную зарплату подчинённых
                 while (reader.Read())
                 {
-                    summSalary += Convert.ToDouble(reader["Base_salary"]);
+                    string position = reader["Position"].ToString(); // Должность подчинённого
+                    int experience = getWorkExperience(reader["Hire_date"].ToString()); // Опыт работы подчинённого
+                    double baseSubordinateSalary = Convert.ToDouble(reader["Base_salary"]); // Базовая ставка подчинённого
+                    
+                    // Расчёт премии за стаж подчинённого
+                    double experiencePremium = CountExperiencePremium(experience, position, baseSubordinateSalary);
+                    // Расчёт премии за подчинённых подчинённого !КРАСИВО ЗАРЕФАКТОРИТЬ ЭТУ ТАБЛИЦУ
+                    double subordinatesPremium = CountSubordinatesPremium(getSummSalaryOfSubordinates(Convert.ToInt32(subordinateId)), position, FindSubordinates(Convert.ToInt32(subordinateId)));
+                    // Общая премия подчинённого
+                    double currPrem = baseSubordinateSalary + experiencePremium + subordinatesPremium;
+                    //MessageBox.Show($"baseSubSalary: {baseSubordinateSalary}\nexpPrem: {experiencePremium}\nsubPremium{subordinatesPremium}\ncurrentPremium: {currPrem}");
+
+                    summSalary = summSalary + baseSubordinateSalary + experiencePremium + subordinatesPremium;
+                    break;
                 }
             }
-            
-            // НАДО К СУММАРНЫЙ ЗАРПЛАТЕ ДОБАВИТЬ ПРЕМИИ, А ОНИ ХРАНЯТСЯ НЕ В БАЗЕ ДАННЫХ, А РАССЧИТЫВАЮТСЯ В КОДЕ
             return summSalary;
         }
 
@@ -107,68 +133,93 @@ namespace StaffClass
             return years;
         }
         
-
-        
         // Подсчёт премии сотрудника
-        private double CountPremium(string position)
+        private double CountExperiencePremium(int experience, string position, double base_salary)
         {
             double premium;
-            double salary = Convert.ToDouble(this.Base_salary);
-            int years = getWorkExperience(this.Hire_date);
-
+            double coefficient;
 
             // К премии manager'у и salesman'у надо добавить %суммарной зарплаты всех подчинённых
             switch (position)
             {
                 case "Employee":
-                    premium = years * 0.03;
-                    if (premium > 0.3)
+                    coefficient = experience * 0.03;
+                    
+                    if (coefficient > 0.3)
                     {
-                        premium = salary * 0.3;
+                        premium = base_salary * 0.3;
                     }
                     else
                     {
-                        premium *= salary;
+                        premium = base_salary * coefficient;
                     }
 
                     break;
                 
                 case "Manager":
-                    premium = years* 0.05;
-                    if (premium > 0.4)
+                    coefficient = experience * 0.05;
+                    if (coefficient > 0.4)
                     {
-                        premium = salary * 0.4;
+                        premium = base_salary * 0.4;
                     }
                     else
                     {
-                        premium *= salary;
+                        premium = base_salary * coefficient;
                     }
                     break;
                 
                 case "Salesman":
-                    premium = years * 0.01;
-                    if (premium > 0.35)
+                    coefficient = experience * 0.01;
+                    if (coefficient > 0.35)
                     {
-                        premium = salary * 0.35;
+                        premium = base_salary * 0.35;
                     }
                     else
                     {
-                        premium *= salary;
+                        premium = base_salary * coefficient;
                     }
                     break;
 
                 default:
-                    premium = 0;
+                    premium = 1;
                     break;
             }
 
             return premium;
         }
 
-        // Сюда поместить расчёт выработанных лет из CountPremium
-        private int CountWorkExperience() 
+        private double CountSubordinatesPremium(double base_salary, string position, List<object> idList)
         {
-            return 0;
+            double coeff;
+            switch (position)
+            {
+                case "Manager":
+                    coeff = 0.005;
+                    break;
+                case "Salesman":
+                    coeff = 0.003;
+                    break;
+                default:
+                    coeff = 0;
+                    break;
+            }
+            double premium = base_salary * idList.Count * coeff;
+            return premium;
         }
+
+        private List<object> FindSubordinates(int id)
+        {
+            List<object> idList = new List<object>();
+            // Поиск id подчинённых
+            SQLiteDataReader reader = dataTableQuerry("base.db", $"SELECT Subordinate_id FROM Bosses WHERE Chief_id = {id};");
+
+            // Список с id подчинённых
+            while (reader.Read())
+            {
+                idList.Add(reader["Subordinate_id"]);
+            }
+            return idList;
+        }
+
     }
 }
