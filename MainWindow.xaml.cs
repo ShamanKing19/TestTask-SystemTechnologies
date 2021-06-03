@@ -60,7 +60,6 @@ namespace TestTask
             InitializeDataBase();
             backButton.Click += AdminWindow;
             backToAuthButton.Click += BackToAuthWindow;
-            decimal counter = 0;
         }
 
         public void InitializeDataBase()
@@ -167,6 +166,9 @@ namespace TestTask
             grid.Children.Remove(sumSalaryTextBlock); // Удаление блока с суммарной зарплатой
             grid.Children.Remove(backButton); // Убираем кнопку "Назад"
             formAuth.Children.Clear(); // Очистка контейнера
+
+            formBorder.Width = 400;
+            formAuth.Width = 400;
 
             // Параметры кнопок
             const int margin = 5;
@@ -420,7 +422,7 @@ namespace TestTask
 
             // Заполняем таблицу
             DataTable dTable = new DataTable();
-            string sqlQuery = "SELECT * FROM Bosses";
+            string sqlQuery = "SELECT  Staff.Name \"Начальник\", Bosses.Subordinate_id \"Подчинённый\" FROM Bosses JOIN Staff ON Bosses.Chief_id = Staff.Employee_id";
             SQLiteDataAdapter adapter = new SQLiteDataAdapter(sqlQuery, dbConnection);
             adapter.Fill(dTable);
 
@@ -453,6 +455,8 @@ namespace TestTask
         // Добавление сотрудника и его аккаунта с паролем
         private void AddEmployee(object sender, RoutedEventArgs e)
         {
+            //formAuth.Children.Clear();
+
 
         }
 
