@@ -55,7 +55,6 @@ namespace StaffClass
                 }
             set { } 
         }
-
         public double fullSalary
         {
             get

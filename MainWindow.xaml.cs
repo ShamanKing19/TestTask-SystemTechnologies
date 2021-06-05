@@ -76,7 +76,8 @@ namespace TestTask
                 SQLiteConnection.CreateFile(dbFileName);
                 newBaseFlag = true;
             }
-
+            
+            // Создание таблиц
             try
             {
                 dbConnection = new SQLiteConnection($"Data Source= {dbFileName};Version=3;");
@@ -84,7 +85,7 @@ namespace TestTask
                 sqlCommand.Connection = dbConnection;
 
                 // Создание таблицы Staff
-                sqlCommand.CommandText = "CREATE TABLE IF NOT EXISTS Staff (Employee_id INTEGER NOT NULL UNIQUE, Name TEXT NOT NULL, Hire_date TEXT, Position TEXT NOT NULL, Base_salary INTEGER NOT NULL, Login TEXT NOT NULL UNIQUE, Premium TEXT, PRIMARY KEY(Employee_id AUTOINCREMENT), FOREIGN KEY(Login) REFERENCES Accounts(Login))";
+                sqlCommand.CommandText = "CREATE TABLE IF NOT EXISTS Staff (Employee_id INTEGER NOT NULL UNIQUE, Name TEXT NOT NULL, Hire_date TEXT, Position TEXT NOT NULL, Base_salary INTEGER NOT NULL, Login TEXT NOT NULL UNIQUE, PRIMARY KEY(Employee_id AUTOINCREMENT), FOREIGN KEY(Login) REFERENCES Accounts(Login))";
                 sqlCommand.ExecuteNonQuery();
 
                 // Создание таблицы Accounts
@@ -98,6 +99,15 @@ namespace TestTask
 
                 // Создание таблицы Bosses
                 sqlCommand.CommandText = "CREATE TABLE IF NOT EXISTS Bosses (Chief_id INTEGER NOT NULL, Subordinate_id INTEGER NOT NULL, FOREIGN KEY(Chief_id) REFERENCES Staff (Employee_id), FOREIGN KEY(Subordinate_id) REFERENCES Staff (Employee_id))";
+                sqlCommand.ExecuteNonQuery();
+
+
+                // Заполение базы тестовыми данными
+                sqlCommand.CommandText = newBaseFlag == true ? "INSERT INTO Accounts (Login, Password) values (\"gera\", \"gera\"), (\"Sasha\", \"Sasha\"), (\"alex123\", \"alex123\"), (\"andrey\", \"andrey\"), (\"Михаил\", \"123\")" : "";
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.CommandText = newBaseFlag == true ? "INSERT INTO Staff (Name, Hire_date, Position, Base_salary, Login) values (\"gera\", \"31.05.2021\", \"Employee\", \"10000\", \"gera\"), (\"Sasha\", \"01.11.2001\", \"Salesman\", \"30000\", \"Sasha\"), (\"Alexey\", \"05.02.2014\", \"Manager\", \"20000\", \"alex123\"), (\"Андрей\", \"27.12.2008\", \"Employee\", \"12000\", \"andrey\"), (\"Михаил\", \"14.04.1980\", \"Employee\", \"25000\", \"Михаил\")" : "";
+                sqlCommand.ExecuteNonQuery();
+                sqlCommand.CommandText = newBaseFlag == true ? "INSERT INTO Bosses (Chief_id, Subordinate_id) values (\"2\", \"1\"), (\"2\", \"3\"), (\"3\", \"1\"), (\"3\", \"4\"), (\"3\", \"5\")" : "";
                 sqlCommand.ExecuteNonQuery();
 
                 // Вывод, если подключено успешно
@@ -161,6 +171,7 @@ namespace TestTask
             }
         }
 
+        // Окно администратора
         private void AdminWindow(object sender, RoutedEventArgs e)
         {
             grid.Children.Remove(sumSalaryTextBlock); // Удаление блока с суммарной зарплатой
@@ -455,7 +466,6 @@ namespace TestTask
         // Добавление сотрудника и его аккаунта с паролем
         private void AddEmployee(object sender, RoutedEventArgs e)
         {
-            //formAuth.Children.Clear();
 
 
         }
@@ -467,6 +477,12 @@ namespace TestTask
             Application.Current.Shutdown();
         }
 
+
+        private void ExecuteCommand(SQLiteCommand sqlCommand, string commandText)
+        {
+            sqlCommand.CommandText = commandText;
+            sqlCommand.ExecuteNonQuery();
+        }
 
     }
 }
